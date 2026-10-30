@@ -1,4 +1,6 @@
 """Read-only diagnostic. Does not start, stop or register CANoe."""
+import csv
+import io
 import ctypes
 import getpass
 import json
@@ -17,7 +19,13 @@ def diagnose():
         return data
     data['beacon_elevated'] = bool(ctypes.windll.shell32.IsUserAnAdmin())
     try:
-        data['canoe_processes'] = subprocess.run(['tasklist', '/FI', 'IMAGENAME eq CANoe*.exe', '/FO', 'CSV', '/NH'], capture_output=True, text=True, timeout=5).stdout.strip()
+        process = subprocess.run(['tasklist', '/FO', 'CSV', '/NH'], capture_output=True,
+                                 text=True, timeout=5, creationflags=subprocess.CREATE_NO_WINDOW)
+        data['process_query_returncode'] = process.returncode
+        data['canoe_processes'] = [row for row in csv.reader(io.StringIO(process.stdout))
+                                   if row and row[0].lower().startswith('canoe')]
+        if process.returncode != 0:
+            data['process_query_error'] = process.stderr.strip() or process.stdout.strip()
     except Exception as exc:
         data['process_query_error'] = str(exc)
     import winreg

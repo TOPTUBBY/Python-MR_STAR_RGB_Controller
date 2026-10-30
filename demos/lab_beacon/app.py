@@ -9,7 +9,7 @@ import shutil
 import threading
 import time
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 from core import Config, COLORS, LABELS, select_status, disk_warning, ErrorLatch
 from monitor import canoe_worker
 from ble_manager import BLEManager
@@ -151,6 +151,28 @@ class BeaconApp:
         for key in ('running', 'error', 'disk', 'water', 'idle'):
             ttk.Button(debug, text=LABELS[key] + '  ' + COLORS[key], command=lambda k=key: self.debug(k)).pack(fill='x', pady=6)
         ttk.Button(debug, text='Return to Auto', command=self.auto).pack(anchor='w', pady=12)
+        ttk.Button(debug, text='Save CANoe diagnostic report...', command=self.save_diagnostic).pack(anchor='w', pady=6)
+
+    def save_diagnostic(self):
+        if getattr(self, 'diagnostic_busy', False):
+            messagebox.showinfo('CANoe diagnostic', 'A diagnostic is already running.')
+            return
+        target = filedialog.asksaveasfilename(title='Save CANoe diagnostic report',
+                    initialfile='canoe_diagnostic.json', defaultextension='.json',
+                    filetypes=[('JSON report', '*.json')])
+        if not target:
+            return
+        self.diagnostic_busy = True
+        self.log('Collecting CANoe diagnostic in the background...')
+        def collect():
+            try:
+                from diagnose_canoe import diagnose
+                data = diagnose()
+                Path(target).write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding='utf-8')
+                self.events.put({'kind': 'diagnostic', 'path': target, 'error': ''})
+            except Exception as exc:
+                self.events.put({'kind': 'diagnostic', 'path': target, 'error': str(exc)})
+        threading.Thread(target=collect, daemon=True).start()
 
     def log(self, message):
         # Bound UI history; repeated COM errors are deduplicated by caller.
@@ -270,7 +292,14 @@ class BeaconApp:
             except queue.Empty:
                 break
             kind = e['kind']
-            if kind == 'devices':
+            if kind == 'diagnostic':
+                self.diagnostic_busy = False
+                if e['error']:
+                    messagebox.showerror('CANoe diagnostic', e['error'])
+                else:
+                    self.log('Diagnostic saved: ' + e['path'])
+                    messagebox.showinfo('CANoe diagnostic', 'Report saved:\n' + e['path'])
+            elif kind == 'devices':
                 self.devices = e['values']
                 self.device_box['values'] = [d['name'] + ' | ' + d['address'] for d in self.devices]
                 if self.devices:

@@ -41,3 +41,5 @@ Installer/launcher review: validate the executable rather than checking file exi
 ## Prepared 1.0.3 Windows portable build
 
 Added a PyInstaller onedir specification, asInvoker manifest, and Windows GitHub Actions build workflow. Added --simulate-led --smoke-test-report for a CI-only packaged GUI check. Python compile and existing 20 tests pass locally. No Windows EXE has yet been built. See ci/BUILD_PLAN_TH.md for exact proposed repository/branch changes before upload approval.
+
+Windows build run 41019550183 succeeded: 20 unit tests and packaged GUI/simulated BLE smoke test passed, Windows x64 PE header and artifact checksums verified. Follow-up build includes portable usage documentation and a GUI diagnostic export button. Live CANoe and physical BLE behavior remain unverified.

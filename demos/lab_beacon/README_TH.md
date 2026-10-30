@@ -2,7 +2,13 @@
 
 โปรแกรมสาธิตแยกจาก MR STAR RGB Controller สำหรับ Windows ใช้ไฟ BLE แจ้งสถานะงานในแลป พร้อม Debug กดทดสอบไฟได้โดยไม่ต้องมี CANoe
 
-**เวอร์ชัน 1.0.2-demo** — Python source พร้อมตัวติดตั้ง dependency และสคริปต์สร้าง EXE บน Windows ไม่มี EXE สำเร็จรูปในแพ็กเกจนี้
+**เวอร์ชัน 1.0.3-demo — Windows x64 Portable EXE**
+
+สำหรับชุด Windows portable: แตก ZIP ทั้งหมด แล้วดับเบิลคลิก `Lab_Beacon_Demo.exe` ไม่ต้องติดตั้ง Python ไม่ใช้ BAT และโปรแกรมไม่ร้องขอ Administrator ต้องเก็บโฟลเดอร์ `_internal` ไว้ข้าง EXE เสมอ
+
+ไป Debug / Test เพื่อกดทดสอบไฟ และกด **Save CANoe diagnostic report...** เพื่อบันทึกข้อมูลวินิจฉัยจากใน GUI โดยตรง หากไม่มีไฟ ให้ใช้โหมด Debug เพื่อดู preview ได้ (การส่ง BLE ต้องมีอุปกรณ์จริง) ตัวเลือกจำลอง BLE ใช้ผ่าน `--simulate-led` หรือการทดสอบ CI
+
+คำแนะนำติดตั้ง Python/BAT ด้านล่างสำหรับผู้ที่รันจาก source เท่านั้น ไม่ต้องทำบนเครื่องแลปที่ใช้ EXE
 
 ## สถานะและลำดับความสำคัญ
 
@@ -109,7 +115,7 @@ DI alarm จะตามค่าปัจจุบันของ source แล
 .venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-ตรวจแล้วในสภาพแวดล้อมพัฒนา: Python compile/import และ 20 automated tests ผ่าน รวม alarm priority ทุกกรณี, latch, disk boundary, nested namespace, attach-only COM mock และ Blink → Solid/OFF ผ่าน simulated BLE ยังไม่ได้ทดสอบ GUI บน Windows, COM กับ CANoe จริง, Compile CAPL ด้วย CANoe หรือ Bluetooth กับหลอดจริง จึงควรทำ acceptance checklist ด้านล่างก่อนใช้ในแลป
+ตรวจแล้ว: build EXE บน Windows x64, เปิด packaged GUI และสั่งไฟจำลองผ่าน พร้อม Python compile/import และ 20 automated tests ผ่าน รวม alarm priority ทุกกรณี, latch, disk boundary, nested namespace, attach-only COM mock และ Blink → Solid/OFF ผ่าน simulated BLE ยังไม่ได้ทดสอบ COM กับ CANoe จริง, Compile CAPL ด้วย CANoe หรือ Bluetooth กับหลอดจริง จึงควรทำ acceptance checklist ด้านล่างก่อนใช้ในแลป
 
 ## Acceptance checklist บนเครื่องแลป
 
@@ -159,3 +165,8 @@ DI alarm จะตามค่าปัจจุบันของ source แล
 ทดสอบ Python source compile และ automated tests เดิม 20 รายการผ่าน ตรวจสคริปต์ batch ด้วยการอ่านโค้ดแล้ว แต่ยังไม่ได้รันตัวติดตั้งหรือ launcher ใหม่นี้บน Windows จริง การแก้ environment ไม่ได้ยืนยันว่าปัญหา COM 0x800401E3 ก่อนหน้าหายแล้ว ต้องตรวจอีกครั้งหลังเปิดโปรแกรมได้
 
 อ้างอิง: [Python venv documentation](https://docs.python.org/3.13/library/venv.html) อธิบายว่า virtual environment ไม่ใช่สิ่งที่ย้ายข้าม path/เครื่องได้โดยทั่วไป และควรสร้างใหม่เมื่อย้าย
+
+
+## v1.0.3 — Portable Windows EXE
+
+Build ด้วย GitHub Actions บน Windows + Python 3.13 x64; ทดสอบเปิด packaged GUI และ simulated BLE ได้ก่อนแจก ชุด portable รวม Python/Tk/COM/BLE dependency แล้ว เพิ่มปุ่มบันทึก CANoe diagnostic ใน GUI และแก้ตัวตรวจ process ให้เก็บ return code/error แทนการตีความ output ว่างว่า CANoe ไม่เปิด ปัญหา COM ก่อนหน้ายังต้องทดสอบบนเครื่องแลปจริง
