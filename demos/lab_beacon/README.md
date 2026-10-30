@@ -1,4 +1,4 @@
-# Lab Beacon Demo 1.0.3
+# Lab Beacon Demo 1.0.4
 
 Standalone Python/Tkinter demonstration for a Windows lab: attach to an existing CANoe instance, monitor its Measurement.Running state and configurable alarm System Variables, and drive an MR STAR / GATT--DEMO BLE lamp.
 
@@ -22,3 +22,5 @@ Based on [TOPTUBBY/Python-MR_STAR_RGB_Controller](https://github.com/TOPTUBBY/Py
 1.0.1 adds attach-only Running Object Table discovery and DIAGNOSE_CANOE.bat for 0x800401E3 troubleshooting. Use the same Windows user/elevation for CANoe and Beacon. ROT fallback cannot bypass Windows permissions or restore missing COM registration.
 
 1.0.2 validates the Python interpreter and dependencies before launching. INSTALL_WINDOWS.bat preserves a broken .venv as .venv_backup_* and recreates it with a working local 64-bit Python, preferring 3.13. This repairs missing base-interpreter paths; it does not establish that the separate CANoe COM issue is resolved. New batch files have been reviewed but not executed on Windows here.
+
+1.0.4: optional user-clicked COM activation (may launch CANoe) after attach-only discovery fails. Activation is consumed once and never repeated by reconnect/watchdog. A successful proxy is retained across polls. The GUI diagnostic now includes CANoe token elevation/session/path and monitor snapshot.

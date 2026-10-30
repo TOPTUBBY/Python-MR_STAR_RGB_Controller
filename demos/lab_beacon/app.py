@@ -15,7 +15,7 @@ from monitor import canoe_worker
 from ble_manager import BLEManager
 from protocol import hex_to_rgb
 
-VERSION = '1.0.3-demo'
+VERSION = '1.0.4-demo'
 STATE_DIR = Path(os.environ.get('LOCALAPPDATA', str(Path.home()))) / 'LabBeaconDemo'
 
 
@@ -77,7 +77,7 @@ class BeaconApp:
         outer = ttk.Frame(self.root, padding=16)
         outer.pack(fill='both', expand=True)
         ttk.Label(outer, text='LAB BEACON  /  CANoe status light', style='Title.TLabel').pack(anchor='w')
-        ttk.Label(outer, text='Demo v1.0.3  •  ' + ('SIMULATED LED' if self.simulate_led else 'REAL BLUETOOTH LED') + '  •  Error > DI water > Disk > Running').pack(anchor='w', pady=(3, 12))
+        ttk.Label(outer, text='Demo v1.0.4  •  ' + ('SIMULATED LED' if self.simulate_led else 'REAL BLUETOOTH LED') + '  •  Error > DI water > Disk > Running').pack(anchor='w', pady=(3, 12))
         ble = ttk.LabelFrame(outer, text='MR STAR / GATT--DEMO', padding=8)
         ble.pack(fill='x')
         ttk.Button(ble, text='Scan BLE', command=self.ble.scan).pack(side='left')
@@ -151,7 +151,10 @@ class BeaconApp:
         for key in ('running', 'error', 'disk', 'water', 'idle'):
             ttk.Button(debug, text=LABELS[key] + '  ' + COLORS[key], command=lambda k=key: self.debug(k)).pack(fill='x', pady=6)
         ttk.Button(debug, text='Return to Auto', command=self.auto).pack(anchor='w', pady=12)
-        ttk.Button(debug, text='Save CANoe diagnostic report...', command=self.save_diagnostic).pack(anchor='w', pady=6)
+        connection = ttk.Frame(debug)
+        connection.pack(fill='x', pady=4)
+        ttk.Button(connection, text='Save CANoe diagnostic report...', command=self.save_diagnostic).pack(side='left')
+        ttk.Button(connection, text='Connect via COM activation (may open CANoe)', command=self.activate_canoe).pack(side='left', padx=8)
 
     def save_diagnostic(self):
         if getattr(self, 'diagnostic_busy', False):
@@ -164,10 +167,12 @@ class BeaconApp:
             return
         self.diagnostic_busy = True
         self.log('Collecting CANoe diagnostic in the background...')
+        snapshot = dict(self.last_sample or {})
         def collect():
             try:
                 from diagnose_canoe import diagnose
                 data = diagnose()
+                data['beacon_monitor_snapshot'] = snapshot
                 Path(target).write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding='utf-8')
                 self.events.put({'kind': 'diagnostic', 'path': target, 'error': ''})
             except Exception as exc:
@@ -241,15 +246,23 @@ class BeaconApp:
         else:
             self.stop_monitor()
 
-    def start_monitor(self):
+    def activate_canoe(self):
+        self.mode.set('Auto')
+        self.stop_monitor()
+        self.monitoring.set(True)
+        self.start_monitor(activate_once=True)
+
+    def start_monitor(self, activate_once=False):
         self.last_sample = None
         self.latch.previous_running = None
         self.started_at = time.monotonic()
         self.cq = mp.Queue()
         self.stop_event = mp.Event()
-        self.proc = mp.Process(target=canoe_worker, args=(self.cq, self.stop_event, self.config.to_dict()), daemon=True)
+        worker_config = self.config.to_dict()
+        worker_config['_activate_once'] = activate_once
+        self.proc = mp.Process(target=canoe_worker, args=(self.cq, self.stop_event, worker_config), daemon=True)
         self.proc.start()
-        self.log('Monitoring active CANoe. Automatic attach retry; never starts CANoe.')
+        self.log('Manual COM activation requested once; CANoe may open.' if activate_once else 'Monitoring active CANoe. Automatic attach retry; never starts CANoe.')
 
     def stop_monitor(self):
         if self.proc:

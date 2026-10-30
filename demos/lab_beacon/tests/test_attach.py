@@ -47,3 +47,69 @@ class AttachTests(unittest.TestCase):
 
     def test_hresult_format(self):
         self.assertEqual(hresult_text(Exception(-2147221021, 'Operation unavailable')), '0x800401E3')
+
+class ConnectionModeTests(unittest.TestCase):
+    def test_normal_mode_never_activates(self):
+        from canoe_attach import connect_once
+        com, dynamic = Mock(), Mock()
+        with patch('canoe_attach.attach_existing', side_effect=RuntimeError('missing')):
+            with self.assertRaises(RuntimeError):
+                connect_once(com, dynamic)
+        com.CoCreateInstance.assert_not_called()
+
+    def test_manual_activation_only_after_attach_fails(self):
+        from canoe_attach import connect_once
+        com, dynamic = Mock(), Mock()
+        with patch('canoe_attach.attach_existing', side_effect=RuntimeError('missing')):
+            app, method = connect_once(com, dynamic, activate=True)
+        self.assertEqual(method, 'Manual COM activation')
+        com.CoCreateInstance.assert_called_once_with(com.CLSIDFromProgID.return_value, None, com.CLSCTX_LOCAL_SERVER, com.IID_IDispatch)
+
+    def test_manual_request_prefers_existing(self):
+        from canoe_attach import connect_once
+        com, dynamic, app = Mock(), Mock(), Mock()
+        with patch('canoe_attach.attach_existing', return_value=(app, 'GetActiveObject')):
+            self.assertEqual(connect_once(com, dynamic, activate=True), (app, 'GetActiveObject'))
+        com.CoCreateInstance.assert_not_called()
+
+    def test_ambiguity_does_not_activate(self):
+        from canoe_attach import connect_once
+        com, dynamic = Mock(), Mock()
+        with patch('canoe_attach.attach_existing', side_effect=RuntimeError('Multiple CANoe objects found')):
+            with self.assertRaises(RuntimeError):
+                connect_once(com, dynamic, activate=True)
+        com.CoCreateInstance.assert_not_called()
+
+    def test_worker_reuses_proxy_and_consumes_activation_once(self):
+        import sys, queue
+        from unittest.mock import PropertyMock, call
+        from monitor import canoe_worker
+        from core import Config
+        com = Mock()
+        app1, app2 = Mock(), Mock()
+        type(app1.Measurement).Running = PropertyMock(side_effect=[True, True, RuntimeError('RPC disconnected')])
+        app2.Measurement.Running = False
+        stop = Mock()
+        stop.is_set.side_effect = [False, False, False, False, True]
+        out = queue.Queue()
+        cfg = Config().to_dict(); cfg['_activate_once'] = True
+        with patch.dict(sys.modules, {'pythoncom': com, 'win32com': Mock(), 'win32com.client': Mock(dynamic=Mock())}):
+            with patch('monitor.connect_once', side_effect=[(app1, 'Manual COM activation'), (app2, 'GetActiveObject')]) as connect:
+                canoe_worker(out, stop, cfg)
+        self.assertEqual(connect.call_count, 2)
+        self.assertTrue(connect.call_args_list[0].kwargs['activate'])
+        self.assertFalse(connect.call_args_list[1].kwargs['activate'])
+        results = [out.get_nowait() for _ in range(4)]
+        self.assertEqual([r['connected'] for r in results], [True, True, False, True])
+        app1.Open.assert_not_called(); app1.Quit.assert_not_called()
+
+    def test_failed_activation_not_repeated(self):
+        import sys, queue
+        from monitor import canoe_worker
+        from core import Config
+        cfg = Config().to_dict(); cfg['_activate_once'] = True
+        stop = Mock(); stop.is_set.side_effect = [False, False, True]
+        with patch.dict(sys.modules, {'pythoncom': Mock(), 'win32com': Mock(), 'win32com.client': Mock(dynamic=Mock())}):
+            with patch('monitor.connect_once', side_effect=RuntimeError('Unavailable')) as connect:
+                canoe_worker(queue.Queue(), stop, cfg)
+        self.assertEqual([c.kwargs['activate'] for c in connect.call_args_list], [True, False])

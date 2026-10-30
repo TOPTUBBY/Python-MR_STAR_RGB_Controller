@@ -10,6 +10,7 @@ import platform
 import subprocess
 import sys
 from canoe_attach import attach_existing, matching_rot_entries, hresult_text
+from process_info import query_process
 
 
 def diagnose():
@@ -18,12 +19,14 @@ def diagnose():
         data['error'] = 'Run this diagnostic on the Windows lab PC.'
         return data
     data['beacon_elevated'] = bool(ctypes.windll.shell32.IsUserAnAdmin())
+    data['beacon_process_details'] = query_process(os.getpid())
     try:
         process = subprocess.run(['tasklist', '/FO', 'CSV', '/NH'], capture_output=True,
                                  text=True, timeout=5, creationflags=subprocess.CREATE_NO_WINDOW)
         data['process_query_returncode'] = process.returncode
         data['canoe_processes'] = [row for row in csv.reader(io.StringIO(process.stdout))
                                    if row and row[0].lower().startswith('canoe')]
+        data['canoe_process_details'] = [query_process(int(row[1])) for row in data['canoe_processes'] if len(row) > 1 and row[1].isdigit()]
         if process.returncode != 0:
             data['process_query_error'] = process.stderr.strip() or process.stdout.strip()
     except Exception as exc:

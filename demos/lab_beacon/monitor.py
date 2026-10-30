@@ -1,7 +1,7 @@
 """COM lives in a disposable subprocess so RPC stalls cannot block Tk/BLE."""
 import time
 from core import read_sysvar
-from canoe_attach import attach_existing
+from canoe_attach import connect_once
 
 
 def canoe_worker(out, stop, config):
@@ -12,13 +12,19 @@ def canoe_worker(out, stop, config):
         out.put({'connected': False, 'running': None, 'detail': 'CANoe requires Windows + pywin32', 'time': time.monotonic()})
         return
     pythoncom.CoInitialize()
+    app = None
+    method = ''
+    activation_pending = bool(config.get('_activate_once', False))
     try:
         while not stop.is_set():
             result = {'connected': False, 'running': None, 'error': None, 'water': None, 'warnings': [], 'time': time.monotonic()}
-            app = None
             try:
-                # GetActiveObject ONLY: never Dispatch(ProgID), Open, Start or Quit.
-                app, method = attach_existing(pythoncom, dynamic)
+                if app is None:
+                    # Consume before calling, so failure/close/reconnect cannot
+                    # activate CANoe a second time without another button click.
+                    activate = activation_pending
+                    activation_pending = False
+                    app, method = connect_once(pythoncom, dynamic, activate=activate)
                 result['running'] = bool(app.Measurement.Running)
                 result['connected'] = True
                 result['detail'] = ('Running' if result['running'] else 'Stopped') + ' | ' + method
@@ -31,12 +37,12 @@ def canoe_worker(out, stop, config):
                     else:
                         result[key] = False
             except Exception as exc:
-                result['detail'] = 'No active CANoe / COM unavailable: ' + str(exc)
-            finally:
                 app = None
+                result['detail'] = 'CANoe connection unavailable: ' + str(exc)
             result['time'] = time.monotonic()
             out.put(result)
             pythoncom.PumpWaitingMessages()
             stop.wait(0.25)
     finally:
+        app = None
         pythoncom.CoUninitialize()

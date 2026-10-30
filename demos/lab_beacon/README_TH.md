@@ -2,7 +2,7 @@
 
 โปรแกรมสาธิตแยกจาก MR STAR RGB Controller สำหรับ Windows ใช้ไฟ BLE แจ้งสถานะงานในแลป พร้อม Debug กดทดสอบไฟได้โดยไม่ต้องมี CANoe
 
-**เวอร์ชัน 1.0.3-demo — Windows x64 Portable EXE**
+**เวอร์ชัน 1.0.4-demo — Windows x64 Portable EXE**
 
 สำหรับชุด Windows portable: แตก ZIP ทั้งหมด แล้วดับเบิลคลิก `Lab_Beacon_Demo.exe` ไม่ต้องติดตั้ง Python ไม่ใช้ BAT และโปรแกรมไม่ร้องขอ Administrator ต้องเก็บโฟลเดอร์ `_internal` ไว้ข้าง EXE เสมอ
 
@@ -170,3 +170,17 @@ DI alarm จะตามค่าปัจจุบันของ source แล
 ## v1.0.3 — Portable Windows EXE
 
 Build ด้วย GitHub Actions บน Windows + Python 3.13 x64; ทดสอบเปิด packaged GUI และ simulated BLE ได้ก่อนแจก ชุด portable รวม Python/Tk/COM/BLE dependency แล้ว เพิ่มปุ่มบันทึก CANoe diagnostic ใน GUI และแก้ตัวตรวจ process ให้เก็บ return code/error แทนการตีความ output ว่างว่า CANoe ไม่เปิด ปัญหา COM ก่อนหน้ายังต้องทดสอบบนเครื่องแลปจริง
+
+
+## v1.0.4 — Manual COM activation และตรวจระดับสิทธิ์ CANoe
+
+สำหรับกรณีที่เห็น CANoe process และ registry ถูกต้อง แต่ GetActiveObject/ROT ไม่พบ:
+
+1. เปิด CANoe และ Config ให้พร้อม ไปแท็บ Debug / Test
+2. กด **Connect via COM activation (may open CANoe)** หนึ่งครั้ง โปรแกรมจะกลับไป Auto และลองเกาะ instance เดิมก่อน หากไม่พบจะขอ COM activation ผ่าน class factory หนึ่งครั้ง
+3. COM activation อาจทำให้ Windows เปิด CANoe เพิ่มหากไม่ reuse instance เดิม ปุ่มระบุผลนี้ไว้ชัดเจน โปรแกรมไม่โหลด Config และไม่สั่ง Start/Stop/Quit
+4. เก็บ proxy ที่เชื่อมต่อสำเร็จไว้เพื่ออ่านสถานะต่อเนื่อง ไม่เรียก activation ทุก 250 ms
+5. หาก CANoe ปิด/COM หลุดหรือ activation ล้มเหลว จะกลับไป attach-only ไม่ activate ซ้ำจนกดปุ่มใหม่ แม้ watchdog เริ่ม observer ใหม่ก็ไม่ activate ซ้ำ
+6. กด Save CANoe diagnostic report เพื่อเก็บรายงานใหม่ มี `canoe_process_details` ระบุ elevated/session/path ของ CANoe หาก Windows ปฏิเสธการอ่าน token จะแสดง error และค่า null แทนการเดาว่าเป็น false
+
+รายงานยังมี snapshot จาก monitor ของ Beacon เพื่อแยกกรณีที่ manual activation เชื่อมต่ออยู่แต่ GetActiveObject ยังหาไม่พบ ปัญหา COM ของเครื่องแลปยังไม่ถือว่าแก้สำเร็จจนได้รับผลทดสอบจริง การเรียก activation ไม่ได้ข้ามสิทธิ์ Windows หรือเปลี่ยน registry

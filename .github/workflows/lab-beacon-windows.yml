@@ -63,13 +63,13 @@ jobs:
           The application requests normal user privileges (asInvoker).
           CANoe COM access still depends on CANoe permissions and registration.
           '@ | Set-Content dist/Lab_Beacon_Demo/START_HERE.txt
-          Compress-Archive -Path dist/Lab_Beacon_Demo -DestinationPath Lab_Beacon_Demo_v1.0.3_Windows_x64.zip
-          Get-FileHash Lab_Beacon_Demo_v1.0.3_Windows_x64.zip -Algorithm SHA256 | Format-List | Out-File SHA256.txt
+          Compress-Archive -Path dist/Lab_Beacon_Demo -DestinationPath Lab_Beacon_Demo_v1.0.4_Windows_x64.zip
+          Get-FileHash Lab_Beacon_Demo_v1.0.4_Windows_x64.zip -Algorithm SHA256 | Format-List | Out-File SHA256.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: Lab_Beacon_Demo_v1.0.3_Windows_x64
+          name: Lab_Beacon_Demo_v1.0.4_Windows_x64
           path: |
-            demos/lab_beacon/Lab_Beacon_Demo_v1.0.3_Windows_x64.zip
+            demos/lab_beacon/Lab_Beacon_Demo_v1.0.4_Windows_x64.zip
             demos/lab_beacon/SHA256.txt
           if-no-files-found: error
           retention-days: 14

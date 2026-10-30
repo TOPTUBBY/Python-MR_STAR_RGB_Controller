@@ -73,5 +73,22 @@ def attach_existing(pythoncom, dynamic):
         code = hresult_text(direct_error)
         raise RuntimeError(
             f'{code}: no accessible active CANoe object. Check CANoe is open, '
-            'same Windows user/elevation, and COM registration. Run DIAGNOSE_CANOE.bat.'
+            'same Windows user/elevation, and COM registration. Use Debug > Save CANoe diagnostic report.'
         ) from direct_error
+
+
+def connect_once(pythoncom, dynamic, activate=False):
+    """Normal attach first; activation is a single explicit user request only."""
+    try:
+        return attach_existing(pythoncom, dynamic)
+    except RuntimeError as exc:
+        if not activate or 'Multiple CANoe' in str(exc):
+            raise
+        try:
+            obj = pythoncom.CoCreateInstance(
+                pythoncom.CLSIDFromProgID('CANoe.Application'), None,
+                pythoncom.CLSCTX_LOCAL_SERVER, pythoncom.IID_IDispatch)
+            return dynamic.Dispatch(obj), 'Manual COM activation'
+        except Exception as activation_error:
+            raise RuntimeError('Manual COM activation failed: ' + hresult_text(activation_error)
+                               + ': ' + str(activation_error)) from activation_error
