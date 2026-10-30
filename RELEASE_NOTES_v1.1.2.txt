@@ -1,0 +1,20 @@
+MR STAR RGB Controller v1.1.2 - RGB PRIMARY BRIGHTNESS COMPATIBILITY FIX
+
+User-measured MODI LIFE MD-NEON-U5 ECO RGB firmware behavior:
+- RED #FF0000, GREEN #00FF00 and BLUE #0000FF dim abnormally at UI 99% / 100%.
+- Same colors are normally bright at UI 98%. Other colors are not affected.
+
+Fix (enabled by default):
+- GUI still allows 0–100%. For pure R/G/B, the program sends 98% (BLE raw
+  floor(1024*98/100) = 1003 / 0x03EB) when the GUI is set to 99 or 100%.
+- All mixed colors, including Yellow, Cyan, Magenta, White, remain unchanged.
+- Checkbox allows turning this compatibility workaround ON/OFF to compare
+  the actual LED output; log and preview show adjusted brightness.
+- Works in color presets, custom HEX, brightness slider, test statuses,
+  PC blink, and stop-effects -> solid-color workflows.
+
+Root cause in the device's firmware is not confirmed; this fix is based
+explicitly on the user's real-device measurements. No physical LED was
+available for automated testing in this environment.
+
+Run: INSTALL_WINDOWS.bat (first use), then RUN_WINDOWS.bat.

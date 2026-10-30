@@ -1,0 +1,41 @@
+MR STAR RGB Controller v1.1.2  (30 October 2026)
+=================================================
+โปรแกรม Windows สำหรับ MODI LIFE RGB / MR STAR (GATT--DEMO)
+
+ติดตั้งครั้งแรก
+1. ติดตั้ง Python 3.10+ บน Windows
+2. แตกไฟล์ ZIP
+3. กด INSTALL_WINDOWS.bat เพื่อสร้าง Python .venv และติดตั้ง bleak
+4. กด RUN_WINDOWS.bat เพื่อเปิด GUI
+
+ใช้งานเบื้องต้น
+1. จ่ายไฟ USB ให้ไฟ RGB และเปิด Bluetooth บน PC
+2. ปิดแอป MR STAR บนมือถือ ให้ Bluetooth หลุดจากไฟ
+3. กด Scan แล้วเลือก GATT--DEMO จากนั้น Connect
+4. กด Red -> #FF0000, Green -> #00FF00, Blue -> #0000FF
+5. RGB Primary Fix เปิดอัตโนมัติ: RED/GREEN/BLUE ที่ GUI 99–100% ส่ง BLE เท่ากับ 98% (raw 1003)
+   แต่สีอื่นยังสามารถส่ง 100% (raw 1024) ได้โดยไม่เปลี่ยนพฤติกรรม
+   ยกเลิก Fix ได้ด้วย Checkbox ในส่วน CUSTOM COLOR & BRIGHTNESS
+6. HEX เช่น #800000 ระบบแปลงค่าความสว่างจากค่า Value ของ HSV ด้วย
+7. Hue Calibration ใช้แก้โทนที่เพี้ยน เลื่อนได้ -30 ถึง +30 องศา
+8. MAX WHITE / Compare ส่งคำสั่ง White Mode แบบแยกสำหรับเปรียบเทียบ
+
+ทดสอบเอฟเฟกต์ไฟ
+1. เลื่อนลงมาที่ EFFECTS & RUNNING LIGHT
+2. ทดลอง 007 Strobe / Flash หรือ 091 Seven-color running
+3. ปรับ Speed หรือ Direction ได้
+4. ใส่ Effect ID 1-117 ได้ (โปรโตคอลอุปกรณ์อาจรองรับไม่ครบ)
+5. Software Blink จะสั่งเปิด/ปิดไฟตามเวลาที่เลือกจาก PC
+6. กด Stop effects / Solid color เพื่อกลับสู่โหมดสีคงที่
+
+ข้อควรทราบ
+- เอฟเฟกต์ไฟวิ่งจริงต้องใช้ LED แบบควบคุมแยก Segment/Pixel ได้
+- V1.1.2 เพิ่ม workaround ตามผลทดสอบจริง: RGB pure 99–100% dim จึงใช้ 98% เฉพาะสามแม่สี
+- ยังไม่ได้ตรวจยืนยันสาเหตุภายใน Controller หรือทดสอบ BLE กับอุปกรณ์จริงในระบบนี้
+- คำสั่ง BLE ได้รับจากการ reverse engineer, ไม่ใช่ Protocol ทางการของ MODI
+- หากไม่เห็นสีหรือเอฟเฟกต์ แนะนำส่ง Activity Log/รูปผลจริงให้ตรวจสอบ
+- โหมด DEMO: py app.py --demo
+- สร้าง EXE ได้จาก BUILD_EXE.bat บน Windows (แพ็กเกจนี้ไม่ใช่ EXE)
+- ไม่ใช้เป็นไฟ Safety Alarm เพียงอย่างเดียว
+
+อ่านเพิ่มเติมใน README_TH.md
