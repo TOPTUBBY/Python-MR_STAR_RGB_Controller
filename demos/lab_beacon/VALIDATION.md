@@ -47,3 +47,7 @@ Windows build run 41019550183 succeeded: 20 unit tests and packaged GUI/simulate
 ## 1.0.4
 
 Added explicit one-shot COM activation and retained proxy, with six tests covering normal no-activation, manual fallback, existing-object preference, ambiguity, proxy reuse and activation not repeated after failure/disconnect. Added a Windows-only test for native token/session/path queries. Linux: 27 tests run, 1 Windows test skipped, compile passed. Windows runner must pass all 27 and packaged GUI test before delivery. Live CANoe remains pending.
+
+## 1.0.5
+
+Fix manual activation calling a nonexistent pythoncom.CLSIDFromProgID. Resolve the ProgID through pywintypes.IID instead. The prior unrestricted Mock accepted nonexistent APIs; the regression now restricts pythoncom attributes. Add native Windows resolution of Scripting.Dictionary through real pywin32 without needing CANoe. Linux: 29 tests run, 27 passed, 2 Windows-only skipped; compile passed. Windows tests and packaged GUI smoke check must pass before delivery. Live CANoe/BLE remain unverified.

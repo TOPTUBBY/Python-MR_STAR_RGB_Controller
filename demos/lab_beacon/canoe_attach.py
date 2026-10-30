@@ -1,4 +1,4 @@
-"""Attach-only CANoe discovery. Never activate a COM server."""
+"""Attach-only discovery with an explicit, one-shot activation fallback."""
 import re
 
 
@@ -77,6 +77,12 @@ def attach_existing(pythoncom, dynamic):
         ) from direct_error
 
 
+def resolve_clsid(progid):
+    """Resolve a registered ProgID using the pywin32 IID API."""
+    import pywintypes
+    return pywintypes.IID(progid)
+
+
 def connect_once(pythoncom, dynamic, activate=False):
     """Normal attach first; activation is a single explicit user request only."""
     try:
@@ -86,7 +92,7 @@ def connect_once(pythoncom, dynamic, activate=False):
             raise
         try:
             obj = pythoncom.CoCreateInstance(
-                pythoncom.CLSIDFromProgID('CANoe.Application'), None,
+                resolve_clsid('CANoe.Application'), None,
                 pythoncom.CLSCTX_LOCAL_SERVER, pythoncom.IID_IDispatch)
             return dynamic.Dispatch(obj), 'Manual COM activation'
         except Exception as activation_error:

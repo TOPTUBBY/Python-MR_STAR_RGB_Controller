@@ -15,7 +15,7 @@ from monitor import canoe_worker
 from ble_manager import BLEManager
 from protocol import hex_to_rgb
 
-VERSION = '1.0.4-demo'
+VERSION = '1.0.5-demo'
 STATE_DIR = Path(os.environ.get('LOCALAPPDATA', str(Path.home()))) / 'LabBeaconDemo'
 
 
@@ -77,7 +77,7 @@ class BeaconApp:
         outer = ttk.Frame(self.root, padding=16)
         outer.pack(fill='both', expand=True)
         ttk.Label(outer, text='LAB BEACON  /  CANoe status light', style='Title.TLabel').pack(anchor='w')
-        ttk.Label(outer, text='Demo v1.0.4  •  ' + ('SIMULATED LED' if self.simulate_led else 'REAL BLUETOOTH LED') + '  •  Error > DI water > Disk > Running').pack(anchor='w', pady=(3, 12))
+        ttk.Label(outer, text='Demo v1.0.5  •  ' + ('SIMULATED LED' if self.simulate_led else 'REAL BLUETOOTH LED') + '  •  Error > DI water > Disk > Running').pack(anchor='w', pady=(3, 12))
         ble = ttk.LabelFrame(outer, text='MR STAR / GATT--DEMO', padding=8)
         ble.pack(fill='x')
         ttk.Button(ble, text='Scan BLE', command=self.ble.scan).pack(side='left')

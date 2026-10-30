@@ -59,11 +59,14 @@ class ConnectionModeTests(unittest.TestCase):
 
     def test_manual_activation_only_after_attach_fails(self):
         from canoe_attach import connect_once
-        com, dynamic = Mock(), Mock()
-        with patch('canoe_attach.attach_existing', side_effect=RuntimeError('missing')):
+        com = Mock(spec=['CoCreateInstance', 'CLSCTX_LOCAL_SERVER', 'IID_IDispatch'])
+        dynamic = Mock()
+        with patch('canoe_attach.attach_existing', side_effect=RuntimeError('missing')), \
+             patch('canoe_attach.resolve_clsid', return_value='resolved-clsid') as resolve:
             app, method = connect_once(com, dynamic, activate=True)
+        resolve.assert_called_once_with('CANoe.Application')
         self.assertEqual(method, 'Manual COM activation')
-        com.CoCreateInstance.assert_called_once_with(com.CLSIDFromProgID.return_value, None, com.CLSCTX_LOCAL_SERVER, com.IID_IDispatch)
+        com.CoCreateInstance.assert_called_once_with('resolved-clsid', None, com.CLSCTX_LOCAL_SERVER, com.IID_IDispatch)
 
     def test_manual_request_prefers_existing(self):
         from canoe_attach import connect_once
@@ -113,3 +116,20 @@ class ConnectionModeTests(unittest.TestCase):
             with patch('monitor.connect_once', side_effect=RuntimeError('Unavailable')) as connect:
                 canoe_worker(queue.Queue(), stop, cfg)
         self.assertEqual([c.kwargs['activate'] for c in connect.call_args_list], [True, False])
+
+
+class ClsidResolutionTests(unittest.TestCase):
+    def test_uses_pywintypes_iid(self):
+        import sys
+        from canoe_attach import resolve_clsid
+        types = Mock(spec=['IID'])
+        with patch.dict(sys.modules, {'pywintypes': types}):
+            self.assertIs(resolve_clsid('CANoe.Application'), types.IID.return_value)
+        types.IID.assert_called_once_with('CANoe.Application')
+
+    @unittest.skipUnless(__import__('sys').platform == 'win32', 'Windows pywin32 required')
+    def test_real_registered_progid_resolution(self):
+        from canoe_attach import resolve_clsid
+        # Built-in Windows COM class: exercises real pywin32 without CANoe.
+        self.assertEqual(str(resolve_clsid('Scripting.Dictionary')).upper(),
+                         '{EE09B103-97E0-11CF-978F-00A02463E06F}')

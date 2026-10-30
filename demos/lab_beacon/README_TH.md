@@ -2,7 +2,7 @@
 
 โปรแกรมสาธิตแยกจาก MR STAR RGB Controller สำหรับ Windows ใช้ไฟ BLE แจ้งสถานะงานในแลป พร้อม Debug กดทดสอบไฟได้โดยไม่ต้องมี CANoe
 
-**เวอร์ชัน 1.0.4-demo — Windows x64 Portable EXE**
+**เวอร์ชัน 1.0.5-demo — Windows x64 Portable EXE**
 
 สำหรับชุด Windows portable: แตก ZIP ทั้งหมด แล้วดับเบิลคลิก `Lab_Beacon_Demo.exe` ไม่ต้องติดตั้ง Python ไม่ใช้ BAT และโปรแกรมไม่ร้องขอ Administrator ต้องเก็บโฟลเดอร์ `_internal` ไว้ข้าง EXE เสมอ
 
@@ -184,3 +184,7 @@ Build ด้วย GitHub Actions บน Windows + Python 3.13 x64; ทดสอ
 6. กด Save CANoe diagnostic report เพื่อเก็บรายงานใหม่ มี `canoe_process_details` ระบุ elevated/session/path ของ CANoe หาก Windows ปฏิเสธการอ่าน token จะแสดง error และค่า null แทนการเดาว่าเป็น false
 
 รายงานยังมี snapshot จาก monitor ของ Beacon เพื่อแยกกรณีที่ manual activation เชื่อมต่ออยู่แต่ GetActiveObject ยังหาไม่พบ ปัญหา COM ของเครื่องแลปยังไม่ถือว่าแก้สำเร็จจนได้รับผลทดสอบจริง การเรียก activation ไม่ได้ข้ามสิทธิ์ Windows หรือเปลี่ยน registry
+
+## v1.0.5 — แก้ปุ่ม COM activation
+
+แก้การเรียก pythoncom.CLSIDFromProgID ที่ไม่มีอยู่ ให้ใช้ pywintypes.IID พร้อมทดสอบ API จริงบน Windows โดยไม่ต้องติดตั้ง CANoe การเชื่อมต่อ CANoe จริงยังต้องยืนยันที่เครื่องแลป
