@@ -1,0 +1,83 @@
+# Intended repository path: .github/workflows/lab-beacon-windows.yml
+name: Build Lab Beacon Windows EXE
+on:
+  push:
+    branches: ['feature/lab-beacon-exe']
+    paths:
+      - 'demos/lab_beacon/**'
+      - '.github/workflows/lab-beacon-windows.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: demos/lab_beacon
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          architecture: x64
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt 'pyinstaller>=6.11,<7'
+          if ($LASTEXITCODE -ne 0) { throw 'Dependency install failed' }
+          python -m pip freeze | Set-Content build-dependencies.txt
+      - name: Validate source and policies
+        run: |
+          python -m compileall -q .
+          if ($LASTEXITCODE -ne 0) { throw 'Compile failed' }
+          python -m unittest discover -s tests -v
+          if ($LASTEXITCODE -ne 0) { throw 'Tests failed' }
+      - name: Build portable Windows app
+        run: |
+          python -m PyInstaller --noconfirm --clean Lab_Beacon_Demo.spec
+          if ($LASTEXITCODE -ne 0) { throw 'EXE build failed' }
+      - name: Smoke test packaged GUI with simulated lamp
+        run: |
+          $exe = Join-Path $PWD 'dist/Lab_Beacon_Demo/Lab_Beacon_Demo.exe'
+          $report = Join-Path $PWD 'smoke-report.json'
+          $process = Start-Process -FilePath $exe -ArgumentList @('--simulate-led', '--smoke-test-report', "`"$report`"") -PassThru
+          if (-not $process.WaitForExit(45000)) {
+            Stop-Process -Id $process.Id -Force
+            throw 'Packaged GUI did not close within 45 seconds'
+          }
+          if ($process.ExitCode -ne 0) { throw "GUI exited with $($process.ExitCode)" }
+          if (-not (Test-Path $report)) { throw 'GUI report missing' }
+          $result = Get-Content $report -Raw | ConvertFrom-Json
+          if (-not $result.success) { throw 'GUI smoke test failed' }
+      - name: Package deliverable
+        run: |
+          Copy-Item README_TH.md,LICENSE,build-dependencies.txt,smoke-report.json dist/Lab_Beacon_Demo/
+          Copy-Item examples dist/Lab_Beacon_Demo/ -Recurse
+          @'
+          Extract the whole folder before use. Double-click Lab_Beacon_Demo.exe.
+          No Python installation or BAT file is needed on the lab PC.
+          Keep _internal next to the EXE. Use Debug / Test to test the lamp.
+          The application requests normal user privileges (asInvoker).
+          CANoe COM access still depends on CANoe permissions and registration.
+          '@ | Set-Content dist/Lab_Beacon_Demo/START_HERE.txt
+          Compress-Archive -Path dist/Lab_Beacon_Demo -DestinationPath Lab_Beacon_Demo_v1.0.3_Windows_x64.zip
+          Get-FileHash Lab_Beacon_Demo_v1.0.3_Windows_x64.zip -Algorithm SHA256 | Format-List | Out-File SHA256.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Lab_Beacon_Demo_v1.0.3_Windows_x64
+          path: |
+            demos/lab_beacon/Lab_Beacon_Demo_v1.0.3_Windows_x64.zip
+            demos/lab_beacon/SHA256.txt
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: Lab_Beacon_build_diagnostics
+          path: |
+            demos/lab_beacon/build/Lab_Beacon_Demo/warn-Lab_Beacon_Demo.txt
+            demos/lab_beacon/smoke-report.json
+          if-no-files-found: ignore

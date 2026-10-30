@@ -1,0 +1,13 @@
+.env
+*.pem
+.venv/
+__pycache__/
+*.pyc
+build/
+dist/
+*.log
+output/
+.venv_backup_*/
+smoke-report.json
+build-dependencies.txt
+SHA256.txt

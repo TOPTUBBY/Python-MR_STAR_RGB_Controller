@@ -1,0 +1,39 @@
+/*@!Encoding:1252*/
+// Create integer System Variables first (see README_TH.md):
+// LabBeacon::Error      initial 0, min 0, max 1
+// LabBeacon::DIWaterLow initial 0, min 0, max 1
+// Add this CAPL program node to the Measurement/Simulation Setup.
+// These keys demonstrate source values only; they do not start/stop CANoe.
+variables
+{
+}
+
+on preStart
+{
+  @sysvar::LabBeacon::Error = 0;
+  @sysvar::LabBeacon::DIWaterLow = 0;
+}
+
+on key 'e'
+{
+  @sysvar::LabBeacon::Error = 1;
+  write("LabBeacon: Error=1. Wait at least 1 second before stopping measurement.");
+}
+
+on key 'c'
+{
+  @sysvar::LabBeacon::Error = 0;
+  write("LabBeacon: Error cleared. Acknowledge latch in Beacon app.");
+}
+
+on key 'w'
+{
+  @sysvar::LabBeacon::DIWaterLow = 1;
+  write("LabBeacon: DI water low.");
+}
+
+on key 'r'
+{
+  @sysvar::LabBeacon::DIWaterLow = 0;
+  write("LabBeacon: DI water restored.");
+}
